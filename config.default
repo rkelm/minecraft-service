@@ -51,3 +51,6 @@ fifo="$server/console.input"
 
 # Console output log location
 log="$server/console.output"
+
+# Time waited to capture command output.
+cmd_wait=3

@@ -55,6 +55,22 @@ versions_json=http://s3.amazonaws.com/Minecraft.Download/versions/versions.json
 # Define LSB log_* functions.
 . /lib/lsb/init-functions
 
+
+# Compatibility to older LSB Standard.
+log_daemon_msg () {
+  log_success_msg "$1"
+}
+
+log_end_msg () {
+  if [ "$1" = "0" ] ; then
+    log_success_msg "success"
+  else
+    log_failure_msg "failure"
+  fi
+}
+
+
+
 # Check user
 if [ ! "$(id -u $user)" ]; then
   log_end_msg 1
@@ -222,9 +238,13 @@ server_command() {
   else
     as_user "printf \"%s\n\"  \"$1\" > $fifo"
   fi
-  
+
+# Added timeout to tail for capturing multiple line output.
+  sleep $cmd_wait &
+  timerPid=$!
+
   if server_version; then
-    tail -f $log | while read log_line; do
+    while read log_line; do
   
       server_log "$log_line"
 
@@ -236,31 +256,32 @@ server_command() {
       
       if array_contains "$log_line_message" message[@]; then
         printf "   %s\n" "$log_line_message"
-        kill $(ps -o pid,cmd --no-headers --ppid $$ | grep tail | awk '{print $1}')
+		kill $timerPid
         return 0
       elif array_contains "$log_line_message" failed[@]; then
         printf "   %s\n" "$log_line_message"
-        kill $(ps -o pid,cmd --no-headers --ppid $$ | grep tail | awk '{print $1}')
+		kill $timerPid
         return 1
       elif array_contains "$log_line_message" unknown[@]; then
         printf "   %s\n" "Unknown console command"
-        kill $(ps -o pid,cmd --no-headers --ppid $$ | grep tail | awk '{print $1}')
+		kill $timerPid
         return 1
       elif [[ ${#message[@]} -eq 0 ]]; then
+		# No specific messages expected, prepare to capture multiline output.
         printf "   %s\n" "$log_line_message"
-        kill $(ps -o pid,cmd --no-headers --ppid $$ | grep tail | awk '{print $1}')
-        return 2
+        retval=2
       else
         ((i++))
-        # Check timeout
+        # Specific messages where expected, but not seen in output.
+		# Return 2 if response was not found in 4 lines
+		if (( i > 3 )); then
+			kill $timerPid
+            return 2
+		fi
       fi
-      
-      # Return 2 if response was not found in 4 lines
-      if (( i > 3 )); then
-        kill $(ps -o pid,cmd --no-headers --ppid $$ | grep tail | awk '{print $1}')
-        return 2
-      fi
-    done
+    done < <( tail --pid=$timerPid -f $log )
+    return $retval
+
   else
     printf "   %s\n" "Sent command: $1"
     return 2
@@ -720,6 +741,29 @@ online_version_exists() {
 
 }
 
+backup_map() {
+  # Usage
+  #   backup_map
+  # Return
+  #   0 if backup succeeds
+  #   1 if backup fails 
+  if [ ! "$world_backup" ]; then
+    log_daemon_msg "World backup directory not defined in config."
+    return 1
+  fi
+  if [ $1 ] ; then
+    local comment="_$1"
+  fi
+  server_properties
+  local world_name=${server_setting[level-name]}
+  echo "   Creating map backup of ${world_name} in backup directory ${world_backup}."
+  tar czf "${world_backup}${world_name}_$(date "+%Y-%m-%d_%H-%M-%S")${comment}.tgz" -C "$server/${world_name}" .
+  case $? in
+    0) return 0 ;;
+    *)return 1 ;;
+  esac
+}
+
 case "$1" in
   start)
     server_is_running
@@ -980,9 +1024,31 @@ case "$1" in
       ;;
     esac
   ;;
+  showlog)
+    if [ ! $2 ]; then
+      log_daemon_msg "No line count specified. Usage: service minecraft showlog <line count>"
+      exit 0
+    fi
+    tail -n $2 $log
+  ;;
+  backupmap)
+    server_is_running
+    case "$?" in
+      0)
+	server_command save-all
+	server_command save-off
+        backup_map "$2"
+	server_command save-on
+      ;;
+      1)
+        backup-map
+      ;;
+    esac
+  ;;
+
 # Catch all
   help|*)
-    printf "%s\n" "Usage: service $name {start|stop|status|restart|reload|command|config|properties|check-update|update|version|help}" >&2
+    printf "%s\n" "Usage: service $name {start|stop|status|restart|reload|command|config|properties|check-update|update|version|showlog|backupmap|help}" >&2
     exit 3
   ;;
 esac
