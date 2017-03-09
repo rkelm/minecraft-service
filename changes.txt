@@ -1,0 +1,4 @@
+config command: Added --symlink-parameter to sed call, to not break symlink.
+config command: Added validation of <setting> parameter. If empty, all settings were deleted.
+Added changes.txt to record changes.
+

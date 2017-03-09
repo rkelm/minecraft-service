@@ -55,7 +55,6 @@ versions_json=http://s3.amazonaws.com/Minecraft.Download/versions/versions.json
 # Define LSB log_* functions.
 . /lib/lsb/init-functions
 
-
 # Compatibility to older LSB Standard.
 log_daemon_msg () {
   log_success_msg "$1"
@@ -68,8 +67,6 @@ log_end_msg () {
     log_failure_msg "failure"
   fi
 }
-
-
 
 # Check user
 if [ ! "$(id -u $user)" ]; then
@@ -138,11 +135,15 @@ service_config() {
   
   local setting=$1 value=$2 updated
   
+  if [[ ! $setting ]] ; then
+    echo \<setting\> parameter is required.
+    return 1
+  fi
   # TODO: Add check, eg. if "#" or something fishy
   
   updated="${setting}=\"${value}\""
   
-  sudo sed -i 's#^'"$setting"'.*#'"$updated"'#' /etc/default/$name
+  sudo sed -i --follow-symlinks 's#^'"$setting"'.*#'"$updated"'#' /etc/default/$name
   return 0
 }
 
@@ -256,28 +257,33 @@ server_command() {
       
       if array_contains "$log_line_message" message[@]; then
         printf "   %s\n" "$log_line_message"
-		kill $timerPid
+	kill $timerPid
+#        kill $(ps -o pid,cmd --no-headers --ppid $$ | grep tail | awk '{print $1}')
         return 0
       elif array_contains "$log_line_message" failed[@]; then
         printf "   %s\n" "$log_line_message"
-		kill $timerPid
+	kill $timerPid
+#        kill $(ps -o pid,cmd --no-headers --ppid $$ | grep tail | awk '{print $1}')
         return 1
       elif array_contains "$log_line_message" unknown[@]; then
         printf "   %s\n" "Unknown console command"
-		kill $timerPid
+	kill $timerPid
+#        kill $(ps -o pid,cmd --no-headers --ppid $$ | grep tail | awk '{print $1}')
         return 1
       elif [[ ${#message[@]} -eq 0 ]]; then
-		# No specific messages expected, prepare to capture multiline output.
+	# No specific messages expected, prepare to capture multiline output.
         printf "   %s\n" "$log_line_message"
+#        kill $(ps -o pid,cmd --no-headers --ppid $$ | grep tail | awk '{print $1}')
         retval=2
       else
         ((i++))
         # Specific messages where expected, but not seen in output.
-		# Return 2 if response was not found in 4 lines
-		if (( i > 3 )); then
-			kill $timerPid
+	# Return 2 if response was not found in 4 lines
+	if (( i > 3 )); then
+   	  kill $timerPid
+#            kill $(ps -o pid,cmd --no-headers --ppid $$ | grep tail | awk '{print $1}')
             return 2
-		fi
+	fi
       fi
     done < <( tail --pid=$timerPid -f $log )
     return $retval
