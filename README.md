@@ -1,6 +1,8 @@
 Minecraft service
 =================
 
+I forked this repo from edvin to adapt the script for use on AWS EC2 with Amazon Linux AMI. It is intended to be used with the Windows client side batch files from repo https://github.com/rkelm/dos_ctrl_ec2_minecraft to create an easily controlled temporary minecraft server on AWS EC2.
+
 A Minecraft server init script for debian based distributions that aims to be a simple and robust service with basic functionality of starting, stopping, restarting, updating and checking the status of a vanilla Minecraft server.
 
 This script does not provide fancy features such as compatibility with modified servers or ramdisk, there's already a plethora of great scripts that can handle those kind of features. Instead, this script provides a simple base that doesn't require any extra installs and can be used for writing your own customized server environment.
@@ -9,7 +11,7 @@ Latest code can be found in development branch. Please report any bugs that you 
 
 **Tested on**
 
-- Ubuntu 14.04
+- Amazon Linux
 
 Features
 --------
