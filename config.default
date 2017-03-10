@@ -3,7 +3,7 @@
 #/etc/default/minecraft
 
 # User running the server
-user="minecraft"
+user="ec2-user"
 
 # Location of server files
 # Full path to directory containing a vanilla Minecraft server.

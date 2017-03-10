@@ -1,3 +1,7 @@
+2017-03-10
+config.default: changed default user to Amazon Linux standard user "ec2-user"
+
+2017-03-09
 config command: Added --symlink-parameter to sed call, to not break symlink.
 config command: Added validation of <setting> parameter. If empty, all settings were deleted.
 Added changes.txt to record changes.
