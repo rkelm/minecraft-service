@@ -1,5 +1,6 @@
 Minecraft service
 =================
+State: RELEASED  
 
 I forked this repo from edvin to adapt the script for use on AWS EC2 with Amazon Linux AMI. It is intended to be used with the Windows client side batch files from repo https://github.com/rkelm/dos_ctrl_ec2_minecraft to create an easily controlled temporary minecraft server on AWS EC2.
 
